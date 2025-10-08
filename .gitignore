@@ -1,0 +1,10 @@
+# Docker data
+my-cluster/data/
+my-cluster/logs/
+
+# Environment files
+*.env
+
+#node-modules
+*node_modules
+
