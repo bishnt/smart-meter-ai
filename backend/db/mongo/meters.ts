@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from "mongoose";
-import { RatePlan } from "../types/users.ts";
+import { RatePlan } from "../../types/users.ts";
 
 interface IMeter extends Document {
   meter_id: string;
