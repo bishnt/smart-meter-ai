@@ -1,6 +1,6 @@
 # Docker data
-my-cluster/data/
-my-cluster/logs/
+clusters/data/
+clusters/logs/
 
 # Environment files
 *.env
@@ -8,3 +8,5 @@ my-cluster/logs/
 #node-modules
 *node_modules
 
+dist
+build

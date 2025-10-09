@@ -1,33 +1,41 @@
-const { InfluxDB, Point } = require('@influxdata/influxdb-client');
+import dotenv from 'dotenv';
+dotenv.config();
 
+import { InfluxDB, Point } from '@influxdata/influxdb-client';
 
 const token = process.env.INFLUXDB_TOKEN as string;
 const url = process.env.INFLUXDB_URL || 'http://localhost:8086';
 
 
-const client = new InfluxDB({ url, token });
+console.log('DEBUG - Token:', token);
+console.log('DEBUG - URL:', url);
 
+const client = new InfluxDB({ url, token });
 
 const org = `local-org`;
 const bucket = `microgrid-data`;
 
 const writeClient = client.getWriteApi(org, bucket, 'ns');
-
 const queryClient = client.getQueryApi(org);
 
-
-async function checkConnection() {
+export async function checkConnection(): Promise<boolean> {
   try {
     const query = `from(bucket: "${bucket}") |> range(start: -1m) |> limit(n: 1)`;
     
     return new Promise((resolve, reject) => {
       queryClient.queryRows(query, {
-        next: () => resolve(true),
+        next: () => {
+          console.log('Successfully connected to InfluxDB');
+          resolve(true);
+        },
         error: (error: any) => {
           console.error('InfluxDB connection error:', error);
           reject(false);
         },
-        complete: () => resolve(true)
+        complete: () => {
+          console.log('Query completed - connection successful');
+          resolve(true);
+        }
       });
     });
   } catch (error) {
@@ -36,14 +44,17 @@ async function checkConnection() {
   }
 }
 
-
-function writeRealtimeReading(meterId: string, nodeType: string, readings: {
-  p_active: number;
-  p_reactive: number;
-  voltage: number;
-  current: number;
-  frequency: number;
-}) {
+export function writeRealtimeReading(
+  meterId: string, 
+  nodeType: string, 
+  readings: {
+    p_active: number;
+    p_reactive: number;
+    voltage: number;
+    current: number;
+    frequency: number;
+  }
+) {
   try {
     const point = new Point('realtime_readings')
       .tag('meter_id', meterId)
@@ -61,8 +72,7 @@ function writeRealtimeReading(meterId: string, nodeType: string, readings: {
   }
 }
 
-
-function writeAggregatedUsage(
+export function writeAggregatedUsage(
   meterId: string, 
   nodeType: string, 
   timeOfUseTier: string, 
@@ -80,12 +90,13 @@ function writeAggregatedUsage(
       .floatField('max_demand_kw', aggregation.max_demand_kw);
 
     writeClient.writePoint(point);
+    console.log(`Aggregated usage written for meter: ${meterId}`);
   } catch (error) {
     console.error('Error writing aggregated usage:', error);
   }
 }
 
-function writeDailySummary(
+export function writeDailySummary(
   meterId: string, 
   nodeType: string, 
   summary: {
@@ -105,12 +116,13 @@ function writeDailySummary(
       .floatField('peak_demand_kw', summary.peak_demand_kw);
 
     writeClient.writePoint(point);
+    console.log(`Daily summary written for meter: ${meterId}`);
   } catch (error) {
     console.error('Error writing daily summary:', error);
   }
 }
 
-function writeMLInference(
+export function writeMLInference(
   meterId: string, 
   inferenceType: string, 
   inference: {
@@ -128,13 +140,13 @@ function writeMLInference(
       .booleanField('alert_flag', inference.alert_flag);
 
     writeClient.writePoint(point);
+    console.log(`ML inference written for meter: ${meterId}`);
   } catch (error) {
     console.error('Error writing ML inference:', error);
   }
 }
 
-
-function flushWrites() {
+export function flushWrites() {
   try {
     writeClient.flush();
     console.log('Data flushed to InfluxDB');
@@ -143,8 +155,7 @@ function flushWrites() {
   }
 }
 
-
-function closeConnection() {
+export function closeConnection() {
   try {
     writeClient.close().then(() => {
       console.log('Write client closed');
@@ -155,17 +166,4 @@ function closeConnection() {
 }
 
 
-module.exports = {
-  client,
-  writeClient,
-  queryClient,
-  org,
-  bucket,
-  checkConnection,
-  writeRealtimeReading,
-  writeAggregatedUsage,
-  writeDailySummary,
-  writeMLInference,
-  flushWrites,
-  closeConnection
-};
+export { client, writeClient, queryClient, org, bucket };
