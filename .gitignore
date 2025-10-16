@@ -1,6 +1,6 @@
 # Docker data
-clusters/data/
-clusters/logs/
+compose/data/
+compose/logs/
 
 # Environment files
 *.env
